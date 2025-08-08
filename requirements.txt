@@ -1,5 +1,5 @@
 # requirements.txt - Final for Streamlit with FAISS
-
+fastapi
 streamlit
 langchain
 langchain-core

@@ -1,16 +1,25 @@
 # requirements.txt
 
 streamlit
-langchain
-langchain-core
-fastapi
-# The missing library that provides FAISS, PyPDFLoader, etc.
-langchain-community
-
-langchain-google-genai
 unstructured[docx]
-pypdf
 python-dotenv
-uvicorn[standard]
-requests
 faiss-cpu
+# requirements.txt - For FastAPI Hackathon API on Render
+
+fastapi==0.111.0
+uvicorn[standard]==0.29.0
+python-dotenv==1.0.1
+
+# Pinning the LangChain family for stability
+langchain==0.2.5
+langchain-core==0.2.5
+langchain-community==0.2.5
+langchain-google-genai==1.0.5
+
+# Pinning Chroma and its dependencies to solve runtime errors
+langchain-chroma==0.1.1
+chromadb==0.4.24
+numpy==1.23.5
+
+pypdf
+requests

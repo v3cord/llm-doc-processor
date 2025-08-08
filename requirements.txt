@@ -1,3 +1,5 @@
+# requirements.txt - Final for FastAPI with FAISS
+
 fastapi
 uvicorn[standard]
 python-dotenv

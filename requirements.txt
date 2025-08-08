@@ -10,3 +10,4 @@ pypdf
 python-dotenv
 requests
 faiss-cpu
+uvicorn

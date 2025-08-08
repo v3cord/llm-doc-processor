@@ -1,14 +1,12 @@
-# requirements.txt - Final for FastAPI with FAISS
+# requirements.txt - Final for Streamlit with FAISS
 
-fastapi
-uvicorn[standard]
-python-dotenv
+streamlit
 langchain
 langchain-core
 langchain-community
 langchain-google-genai
+unstructured[docx]
 pypdf
+python-dotenv
 requests
-
-# The new, reliable vector store library
 faiss-cpu

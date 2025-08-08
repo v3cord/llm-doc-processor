@@ -3,7 +3,7 @@
 streamlit
 langchain
 langchain-core
-
+fastapi
 # The missing library that provides FAISS, PyPDFLoader, etc.
 langchain-community
 

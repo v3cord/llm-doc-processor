@@ -1,9 +1,15 @@
+# requirements.txt
+
 streamlit
 langchain
 langchain-core
 langchain-google-genai
 langchain-chroma
+
+# Pin versions to resolve cloud deployment conflicts
 chromadb==0.4.24
+numpy==1.23.5
+
 pypdf
 unstructured[docx]
 python-dotenv

@@ -1,20 +1,15 @@
 # requirements.txt
 
-# Pinning all major libraries to a known-stable configuration
-# to resolve dependency conflicts on Streamlit Cloud.
-
-streamlit==1.35.0
-langchain==0.2.5
-langchain-core==0.2.9
-langchain-google-genai==1.0.5
-langchain-chroma==0.1.1
-
-# This specific pair is known to be compatible and avoids both
-# the SQLite and NumPy 2.0 errors.
-chromadb==0.4.24
-numpy==1.23.5
-
-pypdf
+streamlit
+langchain
+langchain-google-genai
+langchain-chroma
 unstructured[docx]
+pypdf
 python-dotenv
 requests
+
+# Pinning only the specific libraries that cause the runtime errors.
+# This gives the installer flexibility to find compatible versions for the rest.
+chromadb==0.4.24
+numpy==1.23.5

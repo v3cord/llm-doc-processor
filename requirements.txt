@@ -11,5 +11,6 @@ langchain-google-genai
 unstructured[docx]
 pypdf
 python-dotenv
+uvicorn[standard]
 requests
 faiss-cpu

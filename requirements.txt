@@ -3,13 +3,13 @@
 streamlit
 langchain
 langchain-core
+
+# The missing library that provides FAISS, PyPDFLoader, etc.
+langchain-community
+
 langchain-google-genai
 unstructured[docx]
 pypdf
 python-dotenv
 requests
-
-# The new, reliable vector store library
 faiss-cpu
-
-# We no longer need to pin numpy or chromadb

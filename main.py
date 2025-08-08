@@ -1,99 +1,66 @@
 # main.py
-
 import os
+from fastapi import FastAPI, Header, HTTPException, status
+from pydantic import BaseModel, HttpUrl
+from typing import List
 from dotenv import load_dotenv
-from langchain_google_genai import ChatGoogleGenerativeAI
-from langchain.prompts import PromptTemplate
-from langchain_core.output_parsers import JsonOutputParser, StrOutputParser
-from langchain_core.runnables import RunnablePassthrough
-from pydantic import BaseModel, Field
-from typing import List, Literal
+from helper_functions import load_document_from_url, create_retriever_for_document, get_answer_for_question
 
+# Load environment variables
 load_dotenv()
 
-# --- Pydantic Models for Structured Output ---
-class Rule(BaseModel):
-    clause_id: str = Field(description="e.g., 'Clause 12.3' or 'N/A' if not specified in the text")
-    source_document: str = Field(description="The source filename of the document")
-    page: int = Field(description="The page number of the clause")
-    text: str = Field(description="The exact text of the clause")
-    evaluation: Literal['PASS', 'FAIL'] = Field(description="PASS or FAIL based on the query")
-    reason: str = Field(description="Explanation of how this clause led to the evaluation for the given query")
+# Check for API Key at startup
+if os.getenv("GOOGLE_API_KEY") is None:
+    # This will cause the app to fail on Render if the env var is not set, which is good.
+    raise ValueError("GOOGLE_API_KEY environment variable not set.")
 
-class Justification(BaseModel):
-    summary: str = Field(description="A brief summary of the final decision")
-    rules_applied: List[Rule] = Field(description="A list of all rules that were applied to reach the decision")
+# --- Pydantic Models for Request and Response ---
+class HackRxRequest(BaseModel):
+    documents: HttpUrl
+    questions: List[str]
 
-class FinalResponse(BaseModel):
-    decision: Literal['Approved', 'Rejected', 'Needs More Information'] = Field(description="The final decision")
-    amount: int = Field(description="The approved amount, or 0 if rejected/needs more info")
-    justification: Justification
+class HackRxResponse(BaseModel):
+    answers: List[str]
 
-# --- LLM and Prompts ---
-llm = ChatGoogleGenerativeAI(model="gemini-1.5-flash-latest", temperature=0)
+# --- FastAPI App Instance ---
+# This is the line the error is about. It MUST be named 'app'.
+app = FastAPI(
+    title="HackRx 6.0 Submission API",
+    description="Processes documents and questions for the hackathon.",
+)
 
-HYDE_TEMPLATE = """
-Please write a short, hypothetical passage from an insurance policy document that would perfectly answer the user's question.
-Focus on extracting key terms and concepts related to the user's situation.
-USER QUESTION: {question}
-PASSAGE:
-"""
-
-QA_TEMPLATE = """
-You are an expert insurance claims analyst. Your task is to evaluate a query against a set of insurance policy clauses.
-Based *only* on the provided context (policy clauses), generate a JSON response with the decision and justification.
-CRITICAL INSTRUCTIONS:
-1.  Pay special attention to any time-related conditions in the query, such as 'policy duration' or age, and actively look for corresponding 'waiting period' or 'age limit' clauses in the context.
-2.  Analyze the user's situation based on the query.
-3.  Scrutinize the provided context clauses to find all relevant rules.
-4.  Make a final decision: "Approved", "Rejected", or "Needs More Information".
-5.  Justify the decision by referencing the specific clauses. For each clause used, state its source, text, and how it applies (PASS/FAIL).
-6.  Return the final answer strictly in the JSON format required.
-
-CONTEXT (Policy Clauses):
-{context}
-
-QUERY:
-{query}
-
-REQUIRED JSON FORMAT:
-{format_instructions}
-"""
-
-def format_docs(docs):
-    """Helper function to format retrieved documents into a single string."""
-    return "\n\n".join(doc.page_content for doc in docs)
-
-# --- THE CORE LOGIC - Returns a runnable chain ---
-def get_processing_chain(retriever):
+@app.post("/hackrx/run", response_model=HackRxResponse)
+async def process_hackrx_request(request: HackRxRequest, authorization: str = Header(None)):
     """
-    Creates the full processing chain, now dependent on the provided retriever.
+    This endpoint receives a document URL and a list of questions,
+    and returns a list of answers.
     """
-    parser = JsonOutputParser(pydantic_object=FinalResponse)
-    
-    hyde_prompt = PromptTemplate(input_variables=["question"], template=HYDE_TEMPLATE)
-    qa_prompt = PromptTemplate(
-        template=QA_TEMPLATE,
-        input_variables=["context", "query"],
-        partial_variables={"format_instructions": parser.get_format_instructions()}
-    )
-    
-    retrieval_chain = (
-        hyde_prompt
-        | llm
-        | StrOutputParser()
-        | retriever
-        | format_docs
-    )
+    if not authorization or not authorization.startswith("Bearer "):
+        print("Warning: Authorization header missing or malformed.")
 
-    main_chain = (
-        {
-            "context": retrieval_chain,
-            "query": RunnablePassthrough()
-        }
-        | qa_prompt
-        | llm
-        | parser
-    )
-    
-    return main_chain
+    try:
+        print(f"Loading document from: {request.documents}")
+        docs = load_document_from_url(str(request.documents))
+
+        print("Creating retriever for the document...")
+        retriever = create_retriever_for_document(docs)
+
+        answers = []
+        for i, question in enumerate(request.questions):
+            print(f"Processing question {i+1}/{len(request.questions)}: {question}")
+            answer = get_answer_for_question(question, retriever)
+            answers.append(answer)
+
+        print("All questions processed successfully.")
+        return HackRxResponse(answers=answers)
+
+    except Exception as e:
+        print(f"An error occurred: {e}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"An internal error occurred: {e}"
+        )
+
+@app.get("/")
+def read_root():
+    return {"status": "API is running"}

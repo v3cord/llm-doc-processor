@@ -2,14 +2,14 @@
 
 streamlit
 langchain
+langchain-core
 langchain-google-genai
-langchain-chroma
 unstructured[docx]
 pypdf
 python-dotenv
 requests
 
-# Pinning only the specific libraries that cause the runtime errors.
-# This gives the installer flexibility to find compatible versions for the rest.
-chromadb==0.4.24
-numpy==1.23.5
+# The new, reliable vector store library
+faiss-cpu
+
+# We no longer need to pin numpy or chromadb
